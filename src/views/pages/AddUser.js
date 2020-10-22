@@ -1,4 +1,4 @@
-import React,{ Component } from "react";
+import React,{  useEffect, useState } from "react";
 import { 
     Layout,
     Menu, 
@@ -22,44 +22,33 @@ import {
 import { api } from '../../components/Api';
 import '../../assets/css/style.css';
 import 'antd/dist/antd.css';
-
+import { useHistory } from 'react-router-dom';
 const { Header, Content, Footer, Sider } = Layout;
 const { SubMenu } = Menu;
-class AddUser extends Component{
-
+function AddUser(){
      
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            collapse: false,
-            name:'',
-            email:'',
-            password:'',
-            confirm_password:'',
-            
-        };
-        this.handleLogout= this.handleLogout.bind(this);
-        this.handleChange= this.handleChange.bind(this);
-        this.handleSubmit= this.handleSubmit.bind(this);
-    }
-
-    componentDidMount(){
-        let state = localStorage["appState"];
+    const [name,setName]=useState('');
+    const [email,setEmail]=useState('');
+    const [password,setPassword]=useState('');
+    const [confirmpassword,setConfirmPassword]=useState('');
+    const [collapsed,setCollapsed]=useState(false);
+    const history = useHistory();
+    let [state,setState] = useState(localStorage["appState"]);
+    useEffect(()=>{
+        
         if (state) {
-          let AppState = JSON.parse(state);
-          if (AppState && AppState.isLoggedIn) {
-            console.log('appstateUser',AppState)
-           }else{
-            this.props.history.push('/login');
-           }
+        let AppState = JSON.parse(state);
+        if (AppState && AppState.isLoggedIn) {
         }else{
-            this.props.history.push('/login');
-           }
+            history.push('/login');
+        }
+        }else{
+            history.push('/login');
+        }
 
-    }
-    
-    handleLogout(){
+    },[state])  
+
+    const handleLogout =() =>{
         let state = localStorage["appState"];
         if (state) {
            state = JSON.parse(state);
@@ -67,24 +56,21 @@ class AddUser extends Component{
         api.post('/logout/'+state.user.id,{token:state.user.auth_token}).then(res =>{
             if(res.data.success){
                 localStorage.clear();
-                alert('You are Logged out');
-                window.location.reload();
+                setState('')
             }else{
                 alert('Sorry unable to log out');
             }
         });
     }
 
-    handleSubmit(){
-        var data  = this.state;
-        console.log(data);
+    const handleSubmit = () =>{
         api.post(
             'register',
             {
-                'name':this.state.name,
-                'email':this.state.email,
-                'password':this.state.password,
-                'password_confirmation':this.state.password_confirm,
+                'name':name,
+                'email':email,
+                'password':password,
+                'password_confirmation':confirmpassword,
             }).then(res=>{
                 if(res.data.errors){
                     var err = res.data.errors;
@@ -95,32 +81,23 @@ class AddUser extends Component{
 
                 if(res.data.success){
                     message.success('User created');
-                    this.props.history.push('/user');
+                    history.push('/user');
                 }
             console.log(res);
         });
     }
 
-    handleChange(e){
-        const {name, value} = e.target;
-        this.setState({ [name] : value});
-      }
-
-
-
-    render(){
-        const { collapsed } = this.state;
-
+      
         return(
             <Layout style={{ minHeight: '100vh' }}>
-            <Sider collapsible collapsed={collapsed} onCollapse={this.onCollapse}>
+            <Sider collapsible collapsed={collapsed} onCollapse={collapsed}>
               <div className="logo" />
               <Menu theme="dark" defaultSelectedKeys={['1']} mode="inline">
                 <Menu.Item key="1" icon={<DesktopOutlined />}>
                   User List
                 </Menu.Item>
                 <SubMenu key="sub2" icon={<TeamOutlined />} title="Settings">
-                  <Menu.Item onClick={this.handleLogout} key="6">Logout</Menu.Item>
+                  <Menu.Item onClick={handleLogout} key="6">Logout</Menu.Item>
                 </SubMenu>
                </Menu>
             </Sider>
@@ -135,10 +112,10 @@ class AddUser extends Component{
                             layout="vertical"
                             >
                             <Form.Item label="name" required tooltip="This is a required field">
-                                <Input name="name" type="text" placeholder="Enter your name" onChange={this.handleChange} />
+                                <Input name="name" type="text" placeholder="Enter your name" onChange={e=>setName(e.target.value)} />
                             </Form.Item>
                             <Form.Item label="Email" required tooltip="This is a required field">
-                                <Input name="email" type="email" placeholder="Enter your email" onChange={this.handleChange} />
+                                <Input name="email" type="email" placeholder="Enter your email" onChange={e=>setEmail(e.target.value)} />
                             </Form.Item>
                             <Form.Item
                                 label="Password"
@@ -146,7 +123,7 @@ class AddUser extends Component{
                                 title: 'This field is required',
                                 }}
                             >
-                                <Input type="password" name="password" placeholder="Enter your password" onChange={this.handleChange}/>
+                                <Input type="password" name="password" placeholder="Enter your password" onChange={e=>setPassword(e.target.value)}/>
                             </Form.Item>
                             <Form.Item
                                 label="Confirm Password"
@@ -154,10 +131,10 @@ class AddUser extends Component{
                                 title: 'This field is required',
                                 }}
                             >
-                                <Input type="password" name="password_confirm" placeholder="Confirm your password" onChange={this.handleChange}/>
+                                <Input type="password" name="password_confirm" placeholder="Confirm your password" onChange={e=>setConfirmPassword(e.target.value)}/>
                             </Form.Item>
                             <Form.Item>
-                                <Button type="primary" onClick={this.handleSubmit}>Login</Button>
+                                <Button type="primary" onClick={handleSubmit}>Create</Button>
                             </Form.Item>
                             </Form>
                         </Card>
@@ -171,6 +148,6 @@ class AddUser extends Component{
         );
     }
         
-}
+
 
 export default AddUser;

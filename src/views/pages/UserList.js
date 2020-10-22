@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import EditUser from './EditUser';
 import { 
     Layout,
@@ -21,62 +21,61 @@ import {
     TeamOutlined,
     UserOutlined,
   } from '@ant-design/icons';
+  import { useHistory } from 'react-router-dom';
   import { api } from '../../components/Api';
   import '../../assets/css/style.css';
-import 'antd/dist/antd.css';
+  import 'antd/dist/antd.css';
 
-const { Header, Content, Footer, Sider } = Layout;
-const { SubMenu } = Menu;
-class UserList extends React.Component {
-    
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            collapse: false,
-            users:[],
-        };
-        this.handleLogout= this.handleLogout.bind(this);
-        this.handleDelete= this.handleDelete.bind(this);
-    }
-
-    componentDidMount() {
-        let state = localStorage["appState"];
-        if (state) {
-          let AppState = JSON.parse(state);
-          if (AppState && AppState.isLoggedIn) {
-            console.log('appstateUser',AppState)
-           }else{
-            this.props.history.push('/login');
-           }
-        }else{
-            this.props.history.push('/login');
-           }
-
-         api.get('users').then(res=>{
-             console.log(res);
-            this.setState({users:res.data.users});
-         })  
-       
-    
-      }
+function UserList(){   
+   
+  const { Header, Content, Footer, Sider } = Layout;
+  const { SubMenu } = Menu;
+  const [collapsed,setCollapse] =useState(false)
+  const [users,setUsers] = useState([]);
+  const history = useHistory();
+  let [state,setState] = useState(localStorage["appState"]);
+  useEffect(() => {
+   
+      if (state) {
+        let AppState = JSON.parse(state);
       
-      handleDelete(id){
-        let users = this.state.users;
-        api.post('delete/'+id,{'id':id}).then(res=>{
-            if(res.data.success){
-                message.success('User deleted');
-                this.setState({
-                    users: users.filter(el => el.id != id )
-                });
-            }
-        });
+        if (AppState && AppState.isLoggedIn) {  
+
+        }else{
+          console.log('userList',AppState);
+          history.push('/login');
+        }
+      }else{
+        history.push('/login');
       }
+  }, [state])
+
+
+  useEffect(() => {
+    api.get('users').then(res=>{
+      console.log(res);
+      setUsers(res.data.users);
+    })  
+  }, [])
+      
+
+  const handleDelete = (id) => {
+    
+    api.post('delete/'+id,{'id':id}).then(res=>{
+        if(res.data.success){
+            message.success('User deleted');
+            setUsers(users.filter(el => el.id != id ))
+        }
+    });
+  }
+
+  // const handleLogout = () => {
+  //   if(collapsed === true)
+  // }
 
 
 
-
-    handleLogout(){
+  const handleLogout = () => {
         let state = localStorage["appState"];
         if (state) {
            state = JSON.parse(state);
@@ -85,17 +84,14 @@ class UserList extends React.Component {
             if(res.data.success){
                 localStorage.clear();
                 alert('You are Logged out');
-                window.location.reload();
+                setState('');
             }else{
                 alert('Sorry unable to log out');
             }
         });
     }
 
-    
-
-    render(){
-        const { collapsed } = this.state;
+  
         const columns = [
             {
               title: 'Name',
@@ -111,21 +107,21 @@ class UserList extends React.Component {
                 title: 'Action',
                 dataIndex: '',
                 key: 'id',
-                render: (text, row) =><div> <Button href={"/#/users/"+row.id+"/edit"} type="button" >Edit</Button> <Popconfirm title="Are you sure？" okText="Yes" cancelText="No"> <Button danger onClick={e=>this.handleDelete(row.id)} type="button" >Delete</Button></Popconfirm> </div>,
+                render: (text, row) =><div> <Button href={"/#/users/"+row.id+"/edit"} type="button" >Edit</Button> <Popconfirm title="Are you sure？" okText="Yes" cancelText="No"> <Button danger onClick={e=>handleDelete(row.id)} type="button" >Delete</Button></Popconfirm> </div>,
               },
             ];
           
 
         return (
           <Layout style={{ minHeight: '100vh' }}>
-            <Sider collapsible collapsed={collapsed} onCollapse={this.onCollapse}>
+            <Sider collapsible collapsed={collapsed} >
               <div className="logo" />
               <Menu theme="dark" defaultSelectedKeys={['1']} mode="inline">
                 <Menu.Item key="1" icon={<DesktopOutlined />}>
                   User List
                 </Menu.Item>
                 <SubMenu key="sub2" icon={<TeamOutlined />} title="Settings">
-                  <Menu.Item onClick={this.handleLogout} key="6">Logout</Menu.Item>
+                  <Menu.Item onClick={handleLogout} key="6">Logout</Menu.Item>
                 </SubMenu>
                </Menu>
             </Sider>
@@ -133,9 +129,10 @@ class UserList extends React.Component {
               <Header className="site-layout-background" style={{ padding: 0 }} />
               <Content style={{ margin: '0 16px' }}>
                 <div className="site-layout-background" style={{ padding: 24, minHeight: 360 }}>
-                            
-                    <Table dataSource={this.state.users} columns={columns} />;
-
+                  <div className=""> 
+                      <Button href="#/users/add" style={{float: 'right','margin-bottom':'5px'}} type="primary">Add User</Button>       
+                      <Table dataSource={users} columns={columns} />;
+                  </div>
                 </div>
               </Content>
               <Footer style={{ textAlign: 'center' }}>Assessment @ 2020</Footer>
@@ -144,6 +141,4 @@ class UserList extends React.Component {
         );
      
     }
-}
-
 export default UserList;

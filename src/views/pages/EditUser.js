@@ -1,4 +1,4 @@
-import React,{ Component } from "react";
+import React,{ useState, useEffect, useParams } from "react";
 import { 
     Layout,
     Menu, 
@@ -22,52 +22,86 @@ import {
 import { api } from '../../components/Api';
 import '../../assets/css/style.css';
 import 'antd/dist/antd.css';
+import { useHistory } from "react-router-dom";
 
-const { Header, Content, Footer, Sider } = Layout;
-const { SubMenu } = Menu;
 
-class EditUser extends Component{
-
+function EditUser() {
+    const { Header, Content, Footer, Sider } = Layout;
+    const { SubMenu } = Menu;
      
-    constructor(props) {
-        super(props);
+    // constructor(props) {
+    //     super(props);
 
-        this.state = {
-            id:this.props.match.params.id,
-            collapse: false,
-            name:'',
-            email:'',
-            password:'',
-            confirm_password:'',
+    //     this.state = {
+    //         id:this.props.match.params.id,
+    //         collapse: false,
+    //         name:'',
+    //         email:'',
+    //         password:'',
+    //         confirm_password:'',
             
-        };
-        this.handleLogout= this.handleLogout.bind(this);
-        this.handleChange= this.handleChange.bind(this);
-        this.handleSubmit= this.handleSubmit.bind(this);
-    }
+    //     };
+    //     this.handleLogout= this.handleLogout.bind(this);
+    //     this.handleChange= this.handleChange.bind(this);
+    //     this.handleSubmit= this.handleSubmit.bind(this);
+    // }
+    const [idx,setIdx] = useState(0);
+    const [name,setName]=useState('');
+    const [email,setEmail]=useState('');
+    const [password,setPassword]=useState('');
+    const [confirmpassword,setConfirmPassword]=useState('');
+    const [collapsed,setCollapsed]=useState(false);
+    const history = useHistory();
+    let [state,setState] = useState(localStorage["appState"]);
 
-    componentDidMount(){
-        let state = localStorage["appState"];
+    useEffect(()=>{
+       
         if (state) {
-          let AppState = JSON.parse(state);
-          if (AppState && AppState.isLoggedIn) {
-            console.log('appstateUser',AppState)
-           }else{
-            this.props.history.push('/login');
-           }
+        let AppState = JSON.parse(state);
+        if (AppState && AppState.isLoggedIn) {
         }else{
-            this.props.history.push('/login');
-           }
+            history.push('/login');
+        }
+        }else{
+            history.push('/login');
+        }
 
-        api.get('users/'+this.state.id).then(res=>{
-           this.setState({
-               name:res.data.name,
-               email:res.data.email,
-           })
-        });
-    }
+    },[state]) 
     
-    handleLogout(){
+    
+    useEffect(()=>{
+        let AppState = JSON.parse(state);
+        setIdx(AppState.user.id);
+        api.get('users/'+AppState.user.id).then(res=>{
+                setName(res.data.name);
+                setEmail(res.data.email);   
+        });
+
+    },[])  
+
+
+    // componentDidMount(){
+    //     let state = localStorage["appState"];
+    //     if (state) {
+    //       let AppState = JSON.parse(state);
+    //       if (AppState && AppState.isLoggedIn) {
+    //         console.log('appstateUser',AppState)
+    //        }else{
+    //         this.props.history.push('/login');
+    //        }
+    //     }else{
+    //         this.props.history.push('/login');
+    //        }
+
+    //     api.get('users/'+this.state.id).then(res=>{
+    //        this.setState({
+    //            name:res.data.name,
+    //            email:res.data.email,
+    //        })
+    //     });
+    // }
+    
+    const handleLogout = () => {
         let state = localStorage["appState"];
         if (state) {
            state = JSON.parse(state);
@@ -76,23 +110,21 @@ class EditUser extends Component{
             if(res.data.success){
                 localStorage.clear();
                 alert('You are Logged out');
-                window.location.reload();
+                setState('');
             }else{
                 alert('Sorry unable to log out');
             }
         });
     }
 
-    handleSubmit(){
-        var data  = this.state;
-        console.log(data);
+    const handleSubmit = () => {
         api.post(
-            'users/update/'+this.state.id,
+            'users/update/'+idx,
             {
-                'name':this.state.name,
-                'email':this.state.email,
-                'password':this.state.password,
-                'password_confirmation':this.state.password_confirm,
+                'name':name,
+                'email':email,
+                'password':password,
+                'password_confirmation':confirmpassword,
             }).then(res=>{
                 if(res.data.errors){
                     var err = res.data.errors;
@@ -103,32 +135,22 @@ class EditUser extends Component{
 
                 if(res.data.success){
                     message.success('User Updated');
-                    this.props.history.push('/user');
+                    history.push('/user');
                 }
             console.log(res);
         });
     }
 
-    handleChange(e){
-        const {name, value} = e.target;
-        this.setState({ [name] : value});
-      }
-
-
-
-    render(){
-        const { collapsed } = this.state;
-
         return(
             <Layout style={{ minHeight: '100vh' }}>
-            <Sider collapsible collapsed={collapsed} onCollapse={this.onCollapse}>
+            <Sider collapsible collapsed={collapsed} onCollapse={collapsed}>
               <div className="logo" />
               <Menu theme="dark" defaultSelectedKeys={['1']} mode="inline">
                 <Menu.Item key="1" icon={<DesktopOutlined />}>
                   User List
                 </Menu.Item>
                 <SubMenu key="sub2" icon={<TeamOutlined />} title="Settings">
-                  <Menu.Item onClick={this.handleLogout} key="6">Logout</Menu.Item>
+                  <Menu.Item onClick={handleLogout} key="6">Logout</Menu.Item>
                 </SubMenu>
                </Menu>
             </Sider>
@@ -143,10 +165,10 @@ class EditUser extends Component{
                             layout="vertical"
                             >
                             <Form.Item label="name" required tooltip="This is a required field">
-                                <Input name="name" type="text" value={this.state.name} placeholder="Enter your name" onChange={this.handleChange} />
+                                <Input name="name" type="text" value={name} placeholder="Enter your name" onChange={e => setName(e.target.value)} />
                             </Form.Item>
                             <Form.Item label="Email" required tooltip="This is a required field">
-                                <Input name="email" type="email" value={this.state.email} placeholder="Enter your email" onChange={this.handleChange} />
+                                <Input name="email" type="email" value={email} placeholder="Enter your email" onChange={e => setEmail(e.target.value)} />
                             </Form.Item>
                             <Form.Item
                                 label="Password"
@@ -154,7 +176,7 @@ class EditUser extends Component{
                                 title: 'This field is required',
                                 }}
                             >
-                            <Input type="password" name="password" placeholder="Skip if you do not wish to change your password" onChange={this.handleChange}/>
+                            <Input type="password" name="password" placeholder="Skip if you do not wish to change your password" onChange={e => setPassword(e.target.value)}/>
                             </Form.Item>
                             <Form.Item
                                 label="Confirm Password"
@@ -162,10 +184,10 @@ class EditUser extends Component{
                                 title: 'This field is required',
                                 }}
                             >
-                                <Input type="password" name="password_confirm" placeholder="Skip if you do not wish to change your password" onChange={this.handleChange}/>
+                                <Input type="password" name="password_confirm" placeholder="Skip if you do not wish to change your password" onChange={e => setConfirmPassword(e.target.value)}/>
                             </Form.Item>
                             <Form.Item>
-                                <Button type="primary" onClick={this.handleSubmit}>Login</Button>
+                                <Button type="primary" onClick={handleSubmit}>Update User</Button>
                             </Form.Item>
                             </Form>
                         </Card>
@@ -178,7 +200,6 @@ class EditUser extends Component{
           </Layout>
         );
     }
-        
-}
+    
 
 export default EditUser;

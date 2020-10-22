@@ -1,31 +1,27 @@
-import React,{ Component } from 'react';
+import React,{ useState, useEffect } from 'react';
 import { Redirect } from 'react-router-dom';
 
-class VerifyLogin extends Component{
-
-    constructor(props) {
-        super(props);
-    
-        this.state = {
-          isLoggedIn: false,
-          user: {}
-        }
-      }
-
-      componentWillMount(){
-        let state = localStorage["appState"];
+function VerifyLogin(){
+  const [isLoggedIn,setIsLoggedIn] = useState(false);
+  const [user,setUser] = useState([]);
+  const [state,setState] = useState(localStorage["appState"]);
+  
+  useEffect(() => {
+        
         if (state) {
           let AppState = JSON.parse(state);
-          console.log('this test',AppState);
-          this.setState({ isLoggedIn: AppState.isLoggedIn, user: AppState });
+          let isTrue= AppState.isLoggedIn;
+          setIsLoggedIn(isTrue);
+          setUser(AppState);
+          
         }
-    }
+    },[state])
 
-    render(){
+  
         return(
-            this.state.isLoggedIn === true ? <Redirect to="/users" /> :<Redirect to="/login" />
+          user  ? <Redirect to="/users" /> :<Redirect to="/login" />
         );
-    }
+    
 }
 
 export default VerifyLogin;
